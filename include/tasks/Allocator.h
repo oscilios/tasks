@@ -1,5 +1,5 @@
-#ifndef SYSTEM_LOGGER_ALLOCATOR_H
-#define SYSTEM_LOGGER_ALLOCATOR_H
+#ifndef TASKS_ALLOCATOR_H
+#define TASKS_ALLOCATOR_H
 
 // Based on Howard Hinant's short_alloc: http://howardhinnant.github.io/short_alloc.h
 // Modifications were done in order to be thread safe and have static memory pool. Class and var
@@ -243,4 +243,4 @@ namespace tasks
     }
 }
 
-#endif // SYSTEM_LOGGER_ALLOCATOR_H
+#endif // TASKS_ALLOCATOR_H

@@ -1,5 +1,5 @@
-#ifndef SYSTEM_LOGGER_THREADSAFE_QUEUE_H
-#define SYSTEM_LOGGER_THREADSAFE_QUEUE_H
+#ifndef TASKS_THREADSAFE_QUEUE_H
+#define TASKS_THREADSAFE_QUEUE_H
 
 #include "Allocator.h"
 #include <atomic>
@@ -111,4 +111,4 @@ public:
     }
 };
 
-#endif // SYSTEM_LOGGER_THREADSAFE_QUEUE_H
+#endif // TASKS_THREADSAFE_QUEUE_H
