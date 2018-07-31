@@ -72,7 +72,8 @@ public:
             return false;
 
         auto& x = m_buffer[rIdx & m_bitmask];
-        x();
+        if (x.valid())
+            x();
         m_read.fetch_add(1, std::memory_order_release);
         return true;
     }
@@ -103,6 +104,12 @@ public:
                 assert(false);
                 return future_type{};
             }
+        }
+
+        if (wIdx - rIdx >= TMaxSize - 1)
+        {
+            assert(false);
+            return future_type{};
         }
 
         m_buffer[wIdx & m_bitmask] = std::move(task);

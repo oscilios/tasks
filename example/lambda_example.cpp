@@ -12,18 +12,29 @@ int main()
 
     const int N = 256;
     std::atomic<int> result{0};
-    std::future<int> f;
+    std::mutex mtx; // in order to emplace futures safely
+    std::vector<std::future<int>> futures;
+    futures.reserve(N);
     for (size_t i = 0; i < N; i++)
     {
         // example passing a lambda from multiple threads
-        std::thread([&f, &queue, &result]() {
-            f = queue.try_push([&result]() { return ++result; });
+        std::thread([&futures, &mtx, &queue, &result]() {
+            auto f = queue.try_push([&result]() { return ++result; });
             assert(f.valid());
+            std::lock_guard<std::mutex> lk(mtx);
+            futures.emplace_back(std::move(f));
         })
             .detach();
     }
-    // wait for the last future to be processed.
-    f.wait();
+
+    for (auto& f : futures)
+    {
+        if (f.valid())
+        {
+            f.wait();
+        }
+    }
+
     if (result == N)
     {
         std::cout << "Passed" << std::endl;
