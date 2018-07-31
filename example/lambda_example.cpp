@@ -12,17 +12,18 @@ int main()
 
     const int N = 256;
     std::atomic<int> result{0};
+    std::future<int> f;
     for (size_t i = 0; i < N; i++)
     {
         // example passing a lambda from multiple threads
-        std::thread([&queue, &result]() {
-            auto f = queue.try_push([&result]() { return ++result; });
-            // use future::get to synchronise/wait
-            // if (f.valid())
-            // f.get();
+        std::thread([&f, &queue, &result]() {
+            f = queue.try_push([&result]() { return ++result; });
+            assert(f.valid());
         })
             .detach();
     }
+    // wait for the last future to be processed.
+    f.wait();
     if (result == N)
     {
         std::cout << "Passed" << std::endl;

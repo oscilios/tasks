@@ -22,14 +22,17 @@ int main()
 
     const int N = 256;
     Op op;
-    std::future<void> f;
+    std::vector<std::future<void>> futures;
     for (size_t i = 0; i < N; i++)
     {
-        f = queue.try_push(&Op::sum, op, i, i * 2);
+        futures.emplace_back(queue.try_push(&Op::sum, op, i, i * 2));
+        assert (futures.back().valid());
     }
 
-    // wait for the last future to finish. Or potentially wait for all futures.
-    f.get();
+    for (auto& f : futures)
+    {
+        f.wait();
+    }
 
     int expected = 0;
     for (size_t i = 0; i < N; i++)
