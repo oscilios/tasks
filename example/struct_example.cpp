@@ -3,7 +3,7 @@
 #include <cassert>
 #include <iostream>
 
-std::atomic<int> result;
+std::atomic<int> result{0};
 
 struct Op
 {
@@ -28,8 +28,7 @@ int main()
         f = queue.try_push(&Op::sum, op, i, i * 2);
     }
 
-    // wait for the last future to finish. Potentially we should wait for all futures to
-    // have finished.
+    // wait for the last future to finish. Or potentially wait for all futures.
     f.get();
 
     int expected = 0;
