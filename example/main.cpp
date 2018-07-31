@@ -35,12 +35,13 @@ int main()
     std::atomic<int> result{0};
     while (n++ < N)
     {
-        // example passing a lambda
-        auto f = queue.try_push([&result]() { return ++result; });
-
+        // example passing a lambda from multiple threads
+        std::thread([&queue, &result]() {
+          auto f = queue.try_push([&result]() { return ++result; });
         // use future::get to synchronise/wait
         // if (f.valid())
         // f.get();
+        }).detach();
     }
     std::cout << "result: " << result << std::endl;
     std::cout << "allocations: " << alloc << " memory: " << memory << std::endl;
