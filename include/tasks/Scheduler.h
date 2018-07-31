@@ -37,7 +37,7 @@ public:
     Scheduler(TTaskQueue& queue, int threadCount = -1, bool realtimePriority = false)
     : m_queue(queue)
     {
-        if (threadCount < 0)
+        if (threadCount <= 0)
         {
             threadCount = std::thread::hardware_concurrency();
         }

@@ -8,7 +8,7 @@ int main()
     using namespace std::chrono_literals;
     using TaskQueue = tasks::threadsafe::Queue<int, 512, 65536>;
     TaskQueue queue;
-    tasks::Scheduler<TaskQueue> scheduler(queue, -1);
+    tasks::Scheduler<TaskQueue> scheduler(queue);
 
     const int N = 256;
     std::atomic<int> result{0};

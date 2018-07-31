@@ -3,40 +3,39 @@
 #include <cassert>
 #include <iostream>
 
+std::atomic<int> result;
+
 struct Op
 {
-    int sum(int x, int y) const
+    void sum(int x, int y) const
     {
-        return x + y;
+        result += x + y;
     }
 };
 
 int main()
 {
     using namespace std::chrono_literals;
-    using TaskQueue = tasks::threadsafe::Queue<int, 512, 65536>;
+    using TaskQueue = tasks::threadsafe::Queue<void, 512, 65536>;
     TaskQueue queue;
-    tasks::Scheduler<TaskQueue> scheduler(queue, -1);
+    tasks::Scheduler<TaskQueue> scheduler(queue);
 
     const int N = 256;
     Op op;
-    std::vector<std::future<int> > futures;
-    futures.reserve(N);
+    std::future<void> f;
     for (size_t i = 0; i < N; i++)
     {
-        futures.emplace_back(queue.try_push(&Op::sum, op, i, i * 2));
+        f = queue.try_push(&Op::sum, op, i, i * 2);
     }
 
-    int result = 0;
-    for (auto& f : futures)
-    {
-        result += f.get();
-    }
+    // wait for the last future to finish. Potentially we should wait for all futures to
+    // have finished.
+    f.get();
 
     int expected = 0;
     for (size_t i = 0; i < N; i++)
     {
-        expected += op.sum(i, i * 2);
+        expected += 3*i;
     }
 
     if (expected == result)
