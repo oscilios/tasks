@@ -15,7 +15,7 @@
 std::size_t memory = 0;
 std::size_t alloc = 0;
 
-void* operator new(std::size_t s) throw(std::bad_alloc)
+void* operator new(std::size_t s) /*throw() (std::bad_alloc)*/
 {
     memory += s;
     ++alloc;
