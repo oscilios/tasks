@@ -1,100 +1,72 @@
-cmake_minimum_required (VERSION  3.7.1)
-cmake_policy (PUSH)
-cmake_policy(SET CMP0048 NEW)
+cmake_minimum_required(VERSION 3.30)
 
-project (tasks VERSION 0.1 LANGUAGES "CXX")
-include (CTest)
+project(
+  tasks
+  VERSION 0.2
+  LANGUAGES "CXX")
 
-option (Enable_ASAN     "Enable Address Sanitizer" OFF)
-option (Enable_TSAN     "Enable Thread Sanitizer" OFF)
-option (EnableClangTidy "Run the clang tidy tool" OFF)
+add_library(${PROJECT_NAME} INTERFACE)
+add_library(${PROJECT_NAME}::${PROJECT_NAME} ALIAS ${PROJECT_NAME})
 
+target_sources(
+  ${PROJECT_NAME}
+  INTERFACE FILE_SET
+            public_headers
+            TYPE
+            HEADERS
+            BASE_DIRS
+            include
+            FILES
+            include/tasks/Allocator.h
+            include/tasks/Queue.h
+            include/tasks/Scheduler.h)
 
-if (${CMAKE_BINARY_DIR} STREQUAL ${CMAKE_SOURCE_DIR})
-    message (FATAL_ERROR "Using source directory as build directory is not permitted")
-endif ()
+set_target_properties(${PROJECT_NAME} PROPERTIES VERSION ${PROJECT_VERSION})
 
-add_compile_options (-Wall -Wextra -pedantic)
-add_compile_options (-msse3 -msse4.1 -mfpmath=sse)
+add_subdirectory(example)
 
-if (${CMAKE_CXX_COMPILER_ID} MATCHES Clang)
-    add_compile_options (-std=c++1z)
-    add_compile_options (-stdlib=libc++)
-    add_compile_options (-Weffc++)
-elseif (${CMAKE_CXX_COMPILER_ID} MATCHES GNU)
-    add_compile_options (-std=c++17)
-endif ()
+include(CTest)
+if(BUILD_TESTING)
+  add_subdirectory(test)
+endif()
 
-if (APPLE)
-    set (CMAKE_OSX_ARCHITECTURES x86_64)
-    set (MACOSX_RPATH ON)
-    set (CMAKE_MACOSX_RPATH ON)
-    set (CMAKE_SKIP_BUILD_RPATH FALSE)
-    set (CMAKE_BUILD_WITH_INSTALL_RPATH FALSE)
-    set (CMAKE_INSTALL_RPATH_USE_LINK_PATH TRUE)
-endif ()
+install(
+  TARGETS ${PROJECT_NAME}
+  EXPORT ${PROJECT_NAME}Targets
+  LIBRARY DESTINATION lib
+  ARCHIVE DESTINATION lib
+  RUNTIME DESTINATION bin
+  INCLUDES
+  DESTINATION include
+  PUBLIC_HEADER DESTINATION include/tasks FILE_SET public_headers)
 
-if (Enable_ASAN)
-    add_compile_options (-fsanitize=address -fsanitize-recover=address -fno-omit-frame-pointer)
-    set (CMAKE_EXE_LINKER_FLAGS "${CMAKE_EXE_LINKER_FLAGS} -fsanitize=address -fsanitize-recover=address -fno-omit-frame-pointer")
-endif ()
-if (ENABLE_TSAN)
-    add_compile_options (-fsanitize=thread)
-    set (CMAKE_EXE_LINKER_FLAGS "${CMAKE_EXE_LINKER_FLAGS} -fsanitize=thread")
-endif ()
+include(CMakePackageConfigHelpers)
+file(WRITE ${CMAKE_CURRENT_BINARY_DIR}/cmake/tasks-config.cmake.in
+     "include(\"\${CMAKE_CURRENT_LIST_DIR}/tasks-targets.cmake\")")
 
-set (CMAKE_SHARED_LINKER_FLAGS ${CMAKE_EXE_LINKER_FLAGS})
+write_basic_package_version_file(
+  "${CMAKE_CURRENT_BINARY_DIR}/tasks/tasks-version.cmake"
+  VERSION ${PROJECT_VERSION}
+  COMPATIBILITY AnyNewerVersion)
 
-if (XCODE)
-    set (CMAKE_XCODE_ATTRIBUTE_CLANG_CXX_LANGUAGE_STANDARD            "c++1z")
-    set (CMAKE_XCODE_ATTRIBUTE_CLANG_CXX_LIBRARY                     "libc++")
-    set (CMAKE_XCODE_ATTRIBUTE_GCC_WARN_ABOUT_RETURN_TYPE               "YES")
-    set (CMAKE_XCODE_ATTRIBUTE_GCC_WARN_ABOUT_MISSING_NEWLINE           "YES")
-    set (CMAKE_XCODE_ATTRIBUTE_GCC_WARN_UNUSED_VALUE                    "YES")
-    set (CMAKE_XCODE_ATTRIBUTE_GCC_WARN_UNUSED_VARIABLE                 "YES")
-    set (CMAKE_XCODE_ATTRIBUTE_GCC_WARN_SIGN_COMPARE                    "YES")
-    set (CMAKE_XCODE_ATTRIBUTE_GCC_WARN_UNUSED_FUNCTION                 "YES")
-    set (CMAKE_XCODE_ATTRIBUTE_GCC_WARN_INITIALIZER_NOT_FULLY_BRACKETED "YES")
-    set (CMAKE_XCODE_ATTRIBUTE_GCC_WARN_HIDDEN_VIRTUAL_FUNCTIONS        "YES")
-    set (CMAKE_XCODE_ATTRIBUTE_GCC_WARN_UNINITIALIZED_AUTOS             "YES")
-    set (CMAKE_XCODE_ATTRIBUTE_GCC_WARN_NON_VIRTUAL_DESTRUCTOR          "YES")
-    set (CMAKE_XCODE_ATTRIBUTE_GCC_WARN_SHADOW                          "YES")
-    set (CMAKE_XCODE_ATTRIBUTE_GCC_WARN_PEDANTIC                        "YES")
-    set (GCC_WARN_EFFECTIVE_CPLUSPLUS_VIOLATIONS                        "YES")
-    set (CMAKE_XCODE_ATTRIBUTE_CLANG_WARN_BOOL_CONVERSION               "YES")
-    set (CMAKE_XCODE_ATTRIBUTE_CLANG_WARN_EMPTY_BODY                    "YES")
-    set (CMAKE_XCODE_ATTRIBUTE_CLANG_WARN_ENUM_CONVERSION               "YES")
-    set (CMAKE_XCODE_ATTRIBUTE_CLANG_WARN_INT_CONVERSION                "YES")
-    set (CMAKE_XCODE_ATTRIBUTE_CLANG_WARN_CONSTANT_CONVERSION           "YES")
-endif ()
+export(
+  EXPORT ${PROJECT_NAME}Targets
+  FILE "${CMAKE_CURRENT_BINARY_DIR}/tasks/tasks-targets.cmake"
+  NAMESPACE tasks::)
 
+configure_package_config_file(
+  ${CMAKE_CURRENT_BINARY_DIR}/cmake/tasks-config.cmake.in
+  "${CMAKE_CURRENT_BINARY_DIR}/tasks/tasks-config.cmake"
+  INSTALL_DESTINATION cmake)
 
-add_subdirectory (src)
-add_subdirectory (test)
-add_subdirectory (example)
+set(ConfigPackageLocation lib/cmake/tasks)
 
-if (EnableClangTidy)
-    find_program (clang_tidy_exe NAMES clang-tidy)
-    if (NOT clang_tidy_exe)
-        message (FATAL_ERROR "Could not find the program clang-tidy")
-    else ()
-        if (CMAKE_CXX_FLAGS)
-            string (REPLACE ";" " " clang_cxx_flags ${CMAKE_CXX_FLAGS})
-        endif ()
-        set (clang_tidy_opts "${clang_cxx_flags} -DNDEBUG -I${CMAKE_SOURCE_DIR}/include -I${CMAKE_SOURCE_DIR}/src")
-        if (APPLE)
-            set (xcode_toolchain /Applications/Xcode.app/Contents/Developer/Toolchains/XcodeDefault.xctoolchain)
-            set (clang_tidy_opts "${clang_tidy_opts} -I${xcode_toolchain}/usr/include/c++/v1")
-        endif ()
-        set (CMAKE_EXPORT_COMPILE_COMMANDS ON)
-        set (clang_tidy_line_filter_file ${CMAKE_SOURCE_DIR}/clang_tidy_line_filters.json)
-        set (clang_tidy_checks "*,clang-diagnostic-*,clang-analyzer-*,-clang-analyzer-alpha*,-google-build-using-namespace,-llvm-header-guard,-llvm-include-order,-google-readability-namespace-comments,-google-runtime-references*,-llvm-namespace-comment,-google-explicit-constructor,-google-readability-braces-around-statements,-hicpp-*,-cppcoreguidelines-pro-bounds-pointer-arithmetic,-readability-braces-around-statements,-cppcoreguidelines-pro-bounds-constant-array-index,-cppcoreguidelines-pro-type-member-init,-readability-avoid-const-params-in-decls,-cppcoreguidelines-no-malloc,-cppcoreguidelines-pro-bounds-array-to-pointer-decay,-fuchsia-overloaded-operator,-fuchsia-default-arguments")
-        add_custom_target (clang_tidy ALL
-                          COMMAND echo ${CMAKE_SOURCE_DIR}/run_clang_tidy.py -checks=${clang_tidy_checks} -header-filter=^/${CMAKE_SOURCE_DIR}/src/.* -clang_options=${clang_tidy_opts}
-                          COMMAND ${CMAKE_SOURCE_DIR}/run_clang_tidy.py -checks=${clang_tidy_checks} -header-filter=^${CMAKE_SOURCE_DIR}/src/.* -line_filter_file=${clang_tidy_line_filter_file} -clang_options=${clang_tidy_opts}
-                          WORKING_DIRECTORY ${CMAKE_BINARY_DIR}
-                          COMMENT "running clang-tidy"
-                          )
-    endif ()
-endif ()
-cmake_policy (POP)
+install(
+    EXPORT ${PROJECT_NAME}Targets
+  FILE tasks-targets.cmake
+  NAMESPACE tasks::
+  DESTINATION ${ConfigPackageLocation})
+
+install(FILES ${CMAKE_CURRENT_BINARY_DIR}/cmake/tasks-config.cmake
+              "${CMAKE_CURRENT_BINARY_DIR}/tasks/tasks-version.cmake"
+        DESTINATION ${ConfigPackageLocation})

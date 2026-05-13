@@ -1,7 +1,6 @@
 #ifndef TASKS_SCHEDULER_H
 #define TASKS_SCHEDULER_H
 
-#include "ThreadUtilities.h"
 #include <atomic>
 #include <future>
 #include <memory>
@@ -23,7 +22,6 @@ class tasks::Scheduler
 
     void workerThread()
     {
-        flushDenormalsToZero();
         while (!m_done)
         {
             while (m_queue.try_call_next())
@@ -34,7 +32,7 @@ class tasks::Scheduler
     }
 
 public:
-    Scheduler(TTaskQueue& queue, int threadCount = -1, bool realtimePriority = false)
+    Scheduler(TTaskQueue& queue, int threadCount = -1)
     : m_queue(queue)
     {
         if (threadCount <= 0)
@@ -51,10 +49,6 @@ public:
             for (int i = 0; i < threadCount; i++)
             {
                 m_threads.emplace_back(std::thread(&Scheduler::workerThread, this));
-                if (realtimePriority)
-                {
-                    setRealtimePriority(&m_threads[i]);
-                }
             }
         }
         catch (...)

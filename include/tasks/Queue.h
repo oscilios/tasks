@@ -2,6 +2,7 @@
 #define TASKS_THREADSAFE_QUEUE_H
 
 #include "Allocator.h"
+#include "PackagedTask.h"
 #include <atomic>
 #include <cassert>
 #include <future>
@@ -27,7 +28,7 @@ namespace tasks
 template <typename TCallableReturnType, int64_t TMaxSize, size_t TMemoryPoolSize>
 class tasks::threadsafe::Queue final
 {
-    using task_type   = std::packaged_task<TCallableReturnType()>;
+    using task_type   = tasks::PackagedTask<TCallableReturnType()>;
     using future_type = std::future<TCallableReturnType>;
 
     std::atomic<int64_t> m_readIdx{0};
