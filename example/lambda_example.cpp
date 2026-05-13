@@ -6,8 +6,10 @@
 int main()
 {
     using namespace std::chrono_literals;
-    using TaskQueue = tasks::threadsafe::Queue<int, 512, 65536>;
-    TaskQueue queue;
+    using Pool      = tasks::memory::MemoryPool<65536>;
+    using TaskQueue = tasks::threadsafe::Queue<int, 512, Pool>;
+    Pool      pool;
+    TaskQueue queue(pool);
     tasks::Scheduler<TaskQueue> scheduler(queue);
 
     const int N = 256;

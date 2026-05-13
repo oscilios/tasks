@@ -18,6 +18,7 @@ target_sources(
             include
             FILES
             include/tasks/Allocator.h
+            include/tasks/MPMCSequencer.h
             include/tasks/Queue.h
             include/tasks/Scheduler.h)
 
